@@ -13,8 +13,11 @@ log_section "Config Management"
 # ------------------------------------------------------
 #               Config File Generation
 # ------------------------------------------------------
+log_step "Config File Status"
 if [ ! -f "$CONFIG_FILE" ]; then
-    log_step "Generating new config"
+    printf "[ ${CYAN}NEW${NC} ]\n"
+    printf "      ${DIM}↳ Path:${NC} ${CYAN}%s${NC}\n" "$CONFIG_FILE"
+    printf "      ${DIM}↳ Action:${NC} ${GREEN}Creating default template${NC}\n"
     cat <<EOF > "$CONFIG_FILE"
 {
     "Version": 3,
@@ -34,46 +37,54 @@ if [ ! -f "$CONFIG_FILE" ]; then
     "PlayerStorage": { "Type": "Hytale" }
 }
 EOF
-    log_success
 else
-    log_step "Updating existing config"
-    log_success
+    printf "[ ${GREEN}OK${NC} ]\n"
+    printf "      ${DIM}↳ Path:${NC} ${CYAN}%s${NC}\n" "$CONFIG_FILE"
+    printf "      ${DIM}↳ Action:${NC} ${GREEN}Using existing config${NC}\n"
 fi
 
 # ------------------------------------------------------
 #               ENV Injection Helper
 # ------------------------------------------------------
-# Usage: apply_env ".JSON.PATH" "$ENV_VARIABLE"
+ENV_APPLIED=0
+
 apply_env() {
     local path="$1"
     local value="$2"
+    local name="$3"
 
-    # Only proceed if the environment variable is set
     if [ -n "$value" ]; then
-        # Check if the value should be treated as a number or boolean
         case "$value" in
             true|false|[0-9]*)
                 jq "$path = $value" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
                 ;;
             *)
-                # Treat as string (wrap in quotes)
                 jq "$path = \"$value\"" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
                 ;;
         esac
+        ENV_APPLIED=$((ENV_APPLIED + 1))
+        printf "      ${DIM}↳${NC} ${CYAN}%-20s${NC} ${DIM}→${NC} ${GREEN}%s${NC}\n" "$name" "$value"
     fi
 }
 
 # ------------------------------------------------------
 #           Environment Variable Mappings
 # ------------------------------------------------------
-# These will overwrite existing file values ONLY if the ENV var is provided
-apply_env ".ServerName"               "${HYTALE_SERVER_NAME:-}"
-apply_env ".MOTD"                     "${HYTALE_MOTD:-}"
-apply_env ".Password"                 "${HYTALE_PASSWORD:-}"
-apply_env ".MaxPlayers"               "${HYTALE_MAX_PLAYERS:-}"
-apply_env ".MaxViewRadius"            "${HYTALE_MAX_VIEW_RADIUS:-}"
-apply_env ".LocalCompressionEnabled"  "${HYTALE_COMPRESSION:-}"
-apply_env ".Defaults.World"           "${HYTALE_WORLD:-}"
-apply_env ".Defaults.GameMode"        "${HYTALE_GAMEMODE:-}"
+log_step "Environment Overrides"
 
-printf "      ${DIM}↳ Settings Applied:${NC} ${GREEN}Sync Complete${NC}\n"
+apply_env ".ServerName"               "${HYTALE_SERVER_NAME:-}"        "ServerName"
+apply_env ".MOTD"                     "${HYTALE_MOTD:-}"               "MOTD"
+apply_env ".Password"                 "${HYTALE_PASSWORD:-}"           "Password"
+apply_env ".MaxPlayers"               "${HYTALE_MAX_PLAYERS:-}"        "MaxPlayers"
+apply_env ".MaxViewRadius"            "${HYTALE_MAX_VIEW_RADIUS:-}"    "MaxViewRadius"
+apply_env ".LocalCompressionEnabled"  "${HYTALE_COMPRESSION:-}"        "Compression"
+apply_env ".Defaults.World"           "${HYTALE_WORLD:-}"              "World"
+apply_env ".Defaults.GameMode"        "${HYTALE_GAMEMODE:-}"           "GameMode"
+
+if [ "$ENV_APPLIED" -gt 0 ]; then
+    printf "  %-35s[ ${GREEN}OK${NC} ] ${GREEN}✔${NC}\n" ""
+    printf "      ${DIM}↳ Total:${NC} ${BOLD}${CYAN}%d${NC} ${DIM}override(s) applied${NC}\n" "$ENV_APPLIED"
+else
+    printf "[ ${DIM}SKIP${NC} ]\n"
+    printf "      ${DIM}↳ Info: No environment overrides provided${NC}\n"
+fi
