@@ -1,0 +1,67 @@
+# ------------------------------------------------------
+#               Hytale Server Compose
+# ------------------------------------------------------
+
+services:
+  hytale:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hytale-server:latest
+    container_name: hytale-server
+    restart: unless-stopped
+
+    # ------------------------------------------------------
+    #                    Network
+    # ------------------------------------------------------
+    ports:
+      - "5520:5520/udp"
+
+    # ------------------------------------------------------
+    #                    Storage
+    # ------------------------------------------------------
+    volumes:
+      - hytale-data:/home/container
+
+    # ------------------------------------------------------
+    #                  Environment
+    # ------------------------------------------------------
+    environment:
+      # Core Settings
+      SERVER_PORT: 5520
+      SERVER_IP: "0.0.0.0"
+      DEBUG: "FALSE"
+      PROD: "FALSE"
+
+      # JVM Configuration
+      JAVA_ARGS: "-Xms2G -Xmx4G"
+
+      # Server Configuration
+      HYTALE_SERVER_NAME: "Hytale Server"
+      HYTALE_MAX_PLAYERS: 100
+      HYTALE_GAMEMODE: "Adventure"
+
+      # Feature Flags
+      # CACHE: "FALSE"
+      # HYTALE_BACKUP: "FALSE"
+      # HYTALE_BACKUP_FREQUENCY: "3600"
+
+    # ------------------------------------------------------
+    #                   Security
+    # ------------------------------------------------------
+    security_opt:
+      - no-new-privileges:true
+
+    # ------------------------------------------------------
+    #                   Resources
+    # ------------------------------------------------------
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
+
+volumes:
+  hytale-data:
+    name: hytale-server-data
