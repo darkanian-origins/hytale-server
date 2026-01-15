@@ -13,7 +13,7 @@ log_section "Config Management"
 # ------------------------------------------------------
 #               Config File Generation
 # ------------------------------------------------------
-log_step "Config File Status\n"
+log_step "Config File Status"
 if [ ! -f "$CONFIG_FILE" ]; then
     printf "[ ${CYAN}NEW${NC} ]\n"
     printf "      ${DIM}↳ Path:${NC} ${CYAN}%s${NC}\n" "$CONFIG_FILE"
@@ -70,7 +70,8 @@ apply_env() {
 # ------------------------------------------------------
 #           Environment Variable Mappings
 # ------------------------------------------------------
-log_step "Environment Overrides\n"
+log_step "Environment Overrides"
+printf "\n"
 
 apply_env ".ServerName"               "${HYTALE_SERVER_NAME:-}"        "ServerName"
 apply_env ".MOTD"                     "${HYTALE_MOTD:-}"               "MOTD"

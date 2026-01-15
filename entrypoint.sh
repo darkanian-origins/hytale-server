@@ -118,7 +118,7 @@ log_success
 # ------------------------------------------------------
 #               Execution
 # ------------------------------------------------------
-printf "\n${BOLD}${CYAN}🚀 Launching Hytale Server...${NC}\n\n"
+printf "\n${BOLD}${CYAN}Launching Hytale Server...${NC}\n\n"
 
 if command -v gosu >/dev/null 2>&1; then
     RUNTIME="gosu $USER"
