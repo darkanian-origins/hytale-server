@@ -12,6 +12,10 @@ set -eu
 . "$SCRIPTS_PATH/utils.sh"
 
 AUTH_CACHE_FILE="$BASE_DIR/.hytale-auth-cache.json"
+# Verify BASE_DIR is writable
+if [ ! -w "$BASE_DIR" ]; then
+    log_warn "Warning: $BASE_DIR is not writable - cache will not persist"
+fi
 OAUTH_BASE_URL="https://oauth.accounts.hytale.com"
 SESSIONS_URL="https://sessions.hytale.com"
 ACCOUNT_DATA_URL="https://account-data.hytale.com"
@@ -67,6 +71,28 @@ load_cached_tokens() {
 }
 
 save_auth_cache() {
+    # Validate required variables
+    if [ -z "$REFRESH_TOKEN" ] || [ "$REFRESH_TOKEN" = "null" ]; then
+        printf "  ${RED}Error: REFRESH_TOKEN is empty, cannot save cache${NC}\n"
+        return 1
+    fi
+    
+    if [ -z "$PROFILE_UUID" ] || [ "$PROFILE_UUID" = "null" ]; then
+        printf "  ${RED}Error: PROFILE_UUID is empty, cannot save cache${NC}\n"
+        return 1
+    fi
+    
+    printf "  Saving cache to: %s\n" "$AUTH_CACHE_FILE"
+    
+    # Create cache directory if it doesn't exist
+    CACHE_DIR=$(dirname "$AUTH_CACHE_FILE")
+    if [ ! -d "$CACHE_DIR" ]; then
+        mkdir -p "$CACHE_DIR" || {
+            printf "  ${RED}Failed to create cache directory${NC}\n"
+            return 1
+        }
+    fi
+    
     cat > "$AUTH_CACHE_FILE" << EOF
 {
   "refresh_token": "$REFRESH_TOKEN",
@@ -74,8 +100,23 @@ save_auth_cache() {
   "timestamp": $(date +%s)
 }
 EOF
-    chmod 600 "$AUTH_CACHE_FILE"
+    
+    if [ $? -eq 0 ]; then
+        chmod 600 "$AUTH_CACHE_FILE"
+        # Verify the file was created
+        if [ -f "$AUTH_CACHE_FILE" ]; then
+            printf "  ${GREEN}Cache saved successfully to: %s${NC}\n" "$AUTH_CACHE_FILE"
+            return 0
+        else
+            printf "  ${RED}Cache file was not created${NC}\n"
+            return 1
+        fi
+    else
+        printf "  ${RED}Failed to write cache file${NC}\n"
+        return 1
+    fi
 }
+
 
 refresh_access_token() {
     TOKEN_RESPONSE=$(curl -s -X POST "$OAUTH_BASE_URL/oauth2/token" \
@@ -232,6 +273,17 @@ perform_device_auth() {
         printf "  Using profile: %s\n" "$PROFILE_NAME"
     fi
 
+    # Validate variables before saving
+if [ -z "$PROFILE_UUID" ] || [ "$PROFILE_UUID" = "null" ]; then
+    printf "  ${RED}Could not determine profile UUID${NC}\n"
+    return 1
+fi
+
+if [ -z "$REFRESH_TOKEN" ] || [ "$REFRESH_TOKEN" = "null" ]; then
+    printf "  ${RED}Could not get refresh token${NC}\n"
+    return 1
+fi
+
     # Save cache
     save_auth_cache
     printf "  ${GREEN}Credentials cached for future restarts${NC}\n\n"
@@ -245,6 +297,8 @@ perform_device_auth() {
 
 log_section "Authentication"
 
+AUTH_SUCCESS=0
+
 # Check if tokens are passed directly via environment
 if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ] && [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
     log_step "Token Auth"
@@ -254,11 +308,10 @@ if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ] && [ -n "${HYTALE_SERVER_IDENTITY_T
         export HYTALE_OWNER_UUID_FLAG="--owner-uuid $HYTALE_OWNER_UUID"
     fi
     log_success
-    return 0 2>/dev/null || true
+    AUTH_SUCCESS=1
 fi
 
 # Try cached authentication
-AUTH_SUCCESS=0
 if check_cached_tokens; then
     log_step "Loading cache"
     if load_cached_tokens; then
