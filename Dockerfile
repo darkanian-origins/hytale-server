@@ -53,8 +53,8 @@ RUN if getent passwd ${UID} > /dev/null 2>&1; then \
     fi
 
 COPY --from=builder --chown=root:root /build/hytale-downloader /usr/local/bin/hytale-downloader
-COPY --from=builder --chown=${USER}:${USER} /build/scripts/ /usr/local/bin/scripts/
-COPY --from=builder --chown=${USER}:${USER} /build/entrypoint.sh /entrypoint.sh
+COPY --from=builder --chown=${UID}:${GID} /build/scripts/ /usr/local/bin/scripts/
+COPY --from=builder --chown=${UID}:${GID} /build/entrypoint.sh /entrypoint.sh
 
 ARG BUILDTIME=local
 ARG VERSION=local

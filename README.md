@@ -298,6 +298,25 @@ docker run -d \
   hytale-server:local
 ```
 
+### Podman
+
+This image is compatible with Podman. Use `podman-compose` or run directly:
+
+```bash
+# Build with Podman
+podman build -t hytale-server:local .
+
+# Run with Podman
+podman run -d \
+  --name hytale-server \
+  -p 5520:5520/udp \
+  -v hytale-data:/home/container \
+  hytale-server:local
+
+# Or use podman-compose
+podman-compose up -d
+```
+
 ---
 
 ## Architecture Support
