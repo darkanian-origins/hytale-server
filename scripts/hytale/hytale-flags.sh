@@ -15,6 +15,10 @@ export HYTALE_ALLOW_OP_FLAG=""
 export HYTALE_AUTH_MODE_FLAG=""
 export HYTALE_BACKUP_FLAG=""
 export HYTALE_BACKUP_FREQUENCY_FLAG=""
+export HYTALE_SESSION_TOKEN_FLAG=""
+export HYTALE_IDENTITY_TOKEN_FLAG=""
+export HYTALE_OWNER_UUID_FLAG=""
+export HYTALE_AUTH_PERSISTENCE_FLAG=""
 
 # ------------------------------------------------------
 #              Cache Configuration
@@ -59,6 +63,46 @@ if [ "${HYTALE_AUTH_MODE:-}" = "TRUE" ]; then
 else
     printf "${DIM}disabled${NC}\n"
 fi
+
+# ------------------------------------------------------
+#           OAuth Token Authentication
+# ------------------------------------------------------
+log_step "OAuth Tokens"
+if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ] && [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
+    export HYTALE_SESSION_TOKEN_FLAG="--session-token ${HYTALE_SERVER_SESSION_TOKEN}"
+    export HYTALE_IDENTITY_TOKEN_FLAG="--identity-token ${HYTALE_SERVER_IDENTITY_TOKEN}"
+
+    if [ -n "${HYTALE_OWNER_UUID:-}" ]; then
+        export HYTALE_OWNER_UUID_FLAG="--owner-uuid ${HYTALE_OWNER_UUID}"
+        printf "${GREEN}enabled${NC} (${CYAN}with owner UUID${NC})\n"
+    else
+        log_success
+    fi
+else
+    printf "${DIM}not configured${NC}\n"
+fi
+
+# ------------------------------------------------------
+#           Auth Persistence Mode
+# ------------------------------------------------------
+log_step "Auth Persistence"
+case "${HYTALE_AUTH_PERSISTENCE:-}" in
+    Encrypted|ENCRYPTED|encrypted)
+        export HYTALE_AUTH_PERSISTENCE_FLAG="--auth-persistence Encrypted"
+        printf "${GREEN}Encrypted${NC}\n"
+        ;;
+    Plain|PLAIN|plain)
+        export HYTALE_AUTH_PERSISTENCE_FLAG="--auth-persistence Plain"
+        printf "${YELLOW}Plain${NC} (not recommended)\n"
+        ;;
+    None|NONE|none)
+        export HYTALE_AUTH_PERSISTENCE_FLAG="--auth-persistence None"
+        printf "${DIM}None${NC}\n"
+        ;;
+    *)
+        printf "${DIM}not configured${NC}\n"
+        ;;
+esac
 
 # ------------------------------------------------------
 #                Backup System

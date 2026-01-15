@@ -1,0 +1,29 @@
+# Environment files (contain secrets)
+.env
+.env.*
+!.env.example
+
+# Auth tokens
+.hytale-tokens.json
+*-tokens.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Server data (if testing locally)
+server-data/
