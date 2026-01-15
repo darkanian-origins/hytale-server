@@ -1,0 +1,131 @@
+{
+    "_comment": "Hytale Dedicated Server Egg for Pterodactyl/Pelican",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2025-01-15T00:00:00+00:00",
+    "name": "Hytale",
+    "author": "darkanian@github.com",
+    "description": "A Hytale dedicated server with OAuth authentication support, automatic downloads, and easy configuration. Supports encrypted credential persistence for hassle-free restarts.",
+    "features": ["java_version", "pid_limit"],
+    "docker_images": {
+        "Java 25": "ghcr.io/parkervcp/yolks:java_25"
+    },
+    "file_denylist": [],
+    "startup": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true {{JAVA_ARGS}} -jar {{SERVER_JAR}} --assets ./Assets.zip --bind 0.0.0.0:{{SERVER_PORT}}",
+    "config": {
+        "files": "{\r\n    \"config.json\": {\r\n        \"parser\": \"json\",\r\n        \"find\": {\r\n            \"ServerName\": \"{{server.build.env.SERVER_NAME}}\",\r\n            \"MaxPlayers\": \"{{server.build.env.MAX_PLAYERS}}\",\r\n            \"MOTD\": \"{{server.build.env.MOTD}}\",\r\n            \"Password\": \"{{server.build.env.SERVER_PASSWORD}}\",\r\n            \"Defaults.GameMode\": \"{{server.build.env.GAMEMODE}}\",\r\n            \"Defaults.World\": \"{{server.build.env.DEFAULT_WORLD}}\"\r\n        }\r\n    }\r\n}",
+        "startup": "{\r\n    \"done\": \"Server started\"\r\n}",
+        "logs": "{}",
+        "stop": "stop"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\nset -e\n\napt-get update\napt-get install -y curl jq p7zip-full\n\ncd /mnt/server\n\necho -e \"\\n=== Downloading Hytale Downloader ===\"\ncurl -L -o hytale-downloader.zip https://downloader.hytale.com/hytale-downloader.zip\n7z x hytale-downloader.zip -y -o./hytale-temp\nmv ./hytale-temp/hytale-downloader-linux-amd64 ./hytale-downloader\nchmod +x ./hytale-downloader\nrm -rf hytale-downloader.zip hytale-temp\n\necho -e \"\\n=== Downloading Hytale Server ===\"\n./hytale-downloader --install-dir ./game --accept-sla\n\necho -e \"\\n=== Setting up server files ===\"\nif [ -d \"./game/Server\" ]; then\n    mv ./game/Server/* ./\n    mv ./game/Assets.zip ./\n    rm -rf ./game\nfi\n\nif [ ! -f \"config.json\" ]; then\n    echo '{\"Version\":3,\"ServerName\":\"Hytale Server\",\"MOTD\":\"\",\"Password\":\"\",\"MaxPlayers\":100,\"MaxViewRadius\":32,\"LocalCompressionEnabled\":false,\"Defaults\":{\"World\":\"default\",\"GameMode\":\"Adventure\"}}' > config.json\n    echo \"Created default config.json\"\nfi\n\necho -e \"\\n=== Installation complete! ===\"",
+            "container": "ghcr.io/parkervcp/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Server Jar",
+            "description": "The server JAR filename.",
+            "env_variable": "SERVER_JAR",
+            "default_value": "HytaleServer.jar",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "required|string|max:50",
+            "sort": 1,
+            "field_type": "text"
+        },
+        {
+            "name": "Server Name",
+            "description": "The display name of your server shown in the server list.",
+            "env_variable": "SERVER_NAME",
+            "default_value": "Hytale Server",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:64",
+            "sort": 2,
+            "field_type": "text"
+        },
+        {
+            "name": "Max Players",
+            "description": "Maximum number of concurrent players.",
+            "env_variable": "MAX_PLAYERS",
+            "default_value": "100",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|between:1,1000",
+            "sort": 3,
+            "field_type": "text"
+        },
+        {
+            "name": "Game Mode",
+            "description": "Default game mode for players.",
+            "env_variable": "GAMEMODE",
+            "default_value": "Adventure",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:Adventure,Creative",
+            "sort": 4,
+            "field_type": "text"
+        },
+        {
+            "name": "MOTD",
+            "description": "Message of the Day shown to players.",
+            "env_variable": "MOTD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:256",
+            "sort": 5,
+            "field_type": "text"
+        },
+        {
+            "name": "Server Password",
+            "description": "Password to join. Leave empty for public server.",
+            "env_variable": "SERVER_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "sort": 6,
+            "field_type": "text"
+        },
+        {
+            "name": "Default World",
+            "description": "Default world name for new players.",
+            "env_variable": "DEFAULT_WORLD",
+            "default_value": "default",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:64",
+            "sort": 7,
+            "field_type": "text"
+        },
+        {
+            "name": "Game Profile",
+            "description": "Hytale profile username (if you have multiple profiles). Leave empty to use first profile.",
+            "env_variable": "GAME_PROFILE",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:32",
+            "sort": 8,
+            "field_type": "text"
+        },
+        {
+            "name": "Java Arguments",
+            "description": "Additional JVM arguments (optional).",
+            "env_variable": "JAVA_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "sort": 9,
+            "field_type": "text"
+        }
+    ]
+}

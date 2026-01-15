@@ -18,7 +18,6 @@ export HYTALE_BACKUP_FREQUENCY_FLAG=""
 export HYTALE_SESSION_TOKEN_FLAG=""
 export HYTALE_IDENTITY_TOKEN_FLAG=""
 export HYTALE_OWNER_UUID_FLAG=""
-export HYTALE_AUTH_PERSISTENCE_FLAG=""
 
 # ------------------------------------------------------
 #              Cache Configuration
@@ -82,27 +81,6 @@ else
     printf "${DIM}not configured${NC}\n"
 fi
 
-# ------------------------------------------------------
-#           Auth Persistence Mode
-# ------------------------------------------------------
-log_step "Auth Persistence"
-case "${HYTALE_AUTH_PERSISTENCE:-}" in
-    Encrypted|ENCRYPTED|encrypted)
-        export HYTALE_AUTH_PERSISTENCE_FLAG="--auth-persistence Encrypted"
-        printf "${GREEN}Encrypted${NC}\n"
-        ;;
-    Plain|PLAIN|plain)
-        export HYTALE_AUTH_PERSISTENCE_FLAG="--auth-persistence Plain"
-        printf "${YELLOW}Plain${NC} (not recommended)\n"
-        ;;
-    None|NONE|none)
-        export HYTALE_AUTH_PERSISTENCE_FLAG="--auth-persistence None"
-        printf "${DIM}None${NC}\n"
-        ;;
-    *)
-        printf "${DIM}not configured${NC}\n"
-        ;;
-esac
 
 # ------------------------------------------------------
 #                Backup System

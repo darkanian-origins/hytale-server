@@ -52,11 +52,11 @@ export HYTALE_AUTH_MODE="${HYTALE_AUTH_MODE:-FALSE}"
 export HYTALE_BACKUP="${HYTALE_BACKUP:-FALSE}"
 export HYTALE_BACKUP_FREQUENCY="${HYTALE_BACKUP_FREQUENCY:-}"
 
-# OAuth Authentication Tokens
+# OAuth Authentication Tokens (optional - for token passthrough)
 export HYTALE_SERVER_SESSION_TOKEN="${HYTALE_SERVER_SESSION_TOKEN:-}"
 export HYTALE_SERVER_IDENTITY_TOKEN="${HYTALE_SERVER_IDENTITY_TOKEN:-}"
 export HYTALE_OWNER_UUID="${HYTALE_OWNER_UUID:-}"
-export HYTALE_AUTH_PERSISTENCE="${HYTALE_AUTH_PERSISTENCE:-}"
+export HYTALE_PROFILE="${HYTALE_PROFILE:-}"
 
 export HYTALE_CACHE_FLAG=""
 export HYTALE_ACCEPT_EARLY_PLUGINS_FLAG=""
@@ -68,7 +68,6 @@ export HYTALE_QUIET_FLAGS=""
 export HYTALE_SESSION_TOKEN_FLAG=""
 export HYTALE_IDENTITY_TOKEN_FLAG=""
 export HYTALE_OWNER_UUID_FLAG=""
-export HYTALE_AUTH_PERSISTENCE_FLAG=""
 
 . "$SCRIPTS_PATH/utils.sh"
 
@@ -108,6 +107,9 @@ sh "$SCRIPTS_PATH/hytale/hytale-downloader.sh"
 sh "$SCRIPTS_PATH/hytale/hytale-config.sh"
 sh "$SCRIPTS_PATH/hytale/hytale-flags.sh"
 
+# Source auth cache to set session token flags
+. "$SCRIPTS_PATH/hytale/hytale-auth-cache.sh"
+
 log_section "Process Execution"
 log_step "Finalizing Environment"
 cd "$BASE_DIR"
@@ -141,5 +143,4 @@ exec $RUNTIME java $JAVA_ARGS \
     --bind "$SERVER_IP:$SERVER_PORT" \
     $HYTALE_SESSION_TOKEN_FLAG \
     $HYTALE_IDENTITY_TOKEN_FLAG \
-    $HYTALE_OWNER_UUID_FLAG \
-    $HYTALE_AUTH_PERSISTENCE_FLAG
+    $HYTALE_OWNER_UUID_FLAG

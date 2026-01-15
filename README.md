@@ -154,55 +154,58 @@ These variables override values in `config.json`:
 
 ### OAuth Authentication
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `HYTALE_AUTH_PERSISTENCE` | ` ` | Persist login across restarts (`Encrypted`, `Plain`, `None`) |
-| `HYTALE_SERVER_SESSION_TOKEN` | ` ` | Session JWT (alternative to interactive login) |
-| `HYTALE_SERVER_IDENTITY_TOKEN` | ` ` | Identity JWT (alternative to interactive login) |
-| `HYTALE_OWNER_UUID` | ` ` | Profile UUID for auto-selection |
-
-**Recommended:** Set `HYTALE_AUTH_PERSISTENCE=Encrypted` to securely save credentials.
+| Variable | Description |
+|----------|-------------|
+| `HYTALE_PROFILE` | Profile username (if you have multiple Hytale profiles) |
+| `HYTALE_SERVER_SESSION_TOKEN` | Session JWT (skips interactive auth) |
+| `HYTALE_SERVER_IDENTITY_TOKEN` | Identity JWT (skips interactive auth) |
 
 ---
 
 ## Authentication
 
-Hytale servers use OAuth 2.0 for authentication. This image supports encrypted credential persistence so you only need to log in once.
+Hytale servers use OAuth 2.0 for authentication. This image includes automatic token caching - authenticate once and credentials are saved for future restarts.
 
-### Recommended Setup (Easiest)
+### First-Time Setup
 
-1. **Enable encrypted persistence** in your docker-compose.yml:
-
-```yaml
-environment:
-  HYTALE_AUTH_PERSISTENCE: "Encrypted"
-```
-
-2. **Start the server and authenticate once**:
+1. **Start the server**:
 
 ```bash
-# Start the container
 docker compose up -d
-
-# Attach to the console
-docker attach hytale-server
-
-# Login with device code (follow the URL prompt)
-/auth login device
-
-# Your credentials are now encrypted and saved!
-# Future restarts will auto-authenticate.
 ```
 
-3. **Detach** from the container with `Ctrl+P, Ctrl+Q`
+2. **Watch the logs for the auth prompt**:
 
-### Persistence Modes
+```bash
+docker logs -f hytale-server
+```
 
-| Mode | Description |
-|------|-------------|
-| `Encrypted` | Credentials encrypted on disk (recommended) |
-| `Plain` | Credentials stored as plain text (not recommended) |
-| `None` | No persistence, must login every restart |
+3. **Follow the authentication link** displayed in the logs:
+
+```
+════════════════════════════════════════════════════════════════
+              HYTALE SERVER AUTHENTICATION REQUIRED
+════════════════════════════════════════════════════════════════
+
+  Visit: https://accounts.hytale.com/device?user_code=ABCD-1234
+
+════════════════════════════════════════════════════════════════
+```
+
+4. **Done!** - Credentials are cached automatically. Future restarts will use the cached tokens.
+
+### How Token Caching Works
+
+| What's Cached | TTL | Location |
+|---------------|-----|----------|
+| Refresh Token | 30 days | `.hytale-auth-cache.json` in volume |
+| Profile UUID | Permanent | Same file |
+
+On each startup:
+1. Loads cached refresh token
+2. Gets fresh access token
+3. Creates new game session
+4. Passes session tokens to server
 
 ### Alternative: Token Passthrough
 
@@ -297,6 +300,28 @@ docker run -d \
   -v hytale-data:/home/container \
   hytale-server:local
 ```
+
+### Pterodactyl / Pelican
+
+Import the included egg for Pterodactyl or Pelican panel:
+
+1. Download `egg-hytale.json` from this repository
+2. Go to **Admin** → **Nests** → **Import Egg**
+3. Upload the JSON file
+4. Create a new server using the Hytale egg
+
+**Variables available in the panel:**
+- Server Name, Max Players, Game Mode, MOTD
+- Server Password (leave empty for public)
+- Auth Flags (defaults to `--auth-persistence Encrypted`)
+- Java Arguments (optional)
+
+After first start, use the console to authenticate:
+```
+/auth login device
+```
+
+---
 
 ### Podman
 
