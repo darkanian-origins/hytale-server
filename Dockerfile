@@ -39,7 +39,7 @@ ENV USER=container \
     DEBUG=FALSE
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini iproute2 ca-certificates tzdata jq 7zip && \
+    tini iproute2 ca-certificates tzdata jq 7zip curl && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=tianon/gosu:1.19 /gosu /usr/local/bin/
@@ -53,8 +53,8 @@ RUN if getent passwd ${UID} > /dev/null 2>&1; then \
     fi
 
 COPY --from=builder --chown=root:root /build/hytale-downloader /usr/local/bin/hytale-downloader
-COPY --from=builder --chown=${USER}:${USER} /build/scripts/ /usr/local/bin/scripts/
-COPY --from=builder --chown=${USER}:${USER} /build/entrypoint.sh /entrypoint.sh
+COPY --from=builder --chown=${UID}:${GID} /build/scripts/ /usr/local/bin/scripts/
+COPY --from=builder --chown=${UID}:${GID} /build/entrypoint.sh /entrypoint.sh
 
 ARG BUILDTIME=local
 ARG VERSION=local

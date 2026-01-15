@@ -1,6 +1,9 @@
 # ------------------------------------------------------
 #               Hytale Server Compose
 # ------------------------------------------------------
+# Simple configuration for hosting platforms like Coolify.
+# All settings can be overridden via environment variables.
+# ------------------------------------------------------
 
 services:
   hytale:
@@ -10,63 +13,68 @@ services:
     image: hytale-server:latest
     container_name: hytale-server
     restart: unless-stopped
-
-    # ------------------------------------------------------
-    #                  Interactive Mode
-    # ------------------------------------------------------
     stdin_open: true
     tty: true
 
-    # ------------------------------------------------------
-    #                    Network
-    # ------------------------------------------------------
     ports:
-      - "5520:5520/udp"
+      - "${SERVER_PORT:-5520}:${SERVER_PORT:-5520}/udp"
 
-    # ------------------------------------------------------
-    #                    Storage
-    # ------------------------------------------------------
     volumes:
       - hytale-data:/home/container
 
-    # ------------------------------------------------------
-    #                  Environment
-    # ------------------------------------------------------
     environment:
-      # Core Settings
-      SERVER_PORT: 5520
-      SERVER_IP: "0.0.0.0"
-      DEBUG: "FALSE"
-      PROD: "FALSE"
+      # ==============================================
+      #              RESOURCE SETTINGS
+      # ==============================================
+      # Simple memory configuration (e.g., "2G", "4G", "512M")
+      # Use MEMORY for both min/max, or set them individually
+      MEMORY: "${MEMORY:-4G}"
+      # MEMORY_MIN: "2G"
+      # MEMORY_MAX: "4G"
 
-      # JVM Configuration
-      JAVA_ARGS: "-Xms2G -Xmx4G"
+      # ==============================================
+      #              SERVER SETTINGS
+      # ==============================================
+      SERVER_PORT: "${SERVER_PORT:-5520}"
+      SERVER_IP: "${SERVER_IP:-0.0.0.0}"
+      HYTALE_SERVER_NAME: "${HYTALE_SERVER_NAME:-Hytale Server}"
+      HYTALE_MAX_PLAYERS: "${HYTALE_MAX_PLAYERS:-100}"
+      HYTALE_GAMEMODE: "${HYTALE_GAMEMODE:-Adventure}"
+      # HYTALE_MOTD: ""
+      # HYTALE_PASSWORD: ""
+      # HYTALE_WORLD: "default"
 
-      # Server Configuration
-      HYTALE_SERVER_NAME: "Hytale Server"
-      HYTALE_MAX_PLAYERS: 100
-      HYTALE_GAMEMODE: "Adventure"
+      # ==============================================
+      #              FEATURE FLAGS
+      # ==============================================
+      # CACHE: "TRUE"                    # AOT cache for faster startups
+      # HYTALE_BACKUP: "TRUE"            # Enable automatic backups
+      # HYTALE_BACKUP_FREQUENCY: "3600"  # Backup every hour (seconds)
+      # HYTALE_ALLOW_OP: "TRUE"          # Enable operator commands
+      # HYTALE_ACCEPT_EARLY_PLUGINS: "TRUE"
 
-      # Feature Flags
-      # CACHE: "FALSE"
-      # HYTALE_BACKUP: "FALSE"
-      # HYTALE_BACKUP_FREQUENCY: "3600"
+      # ==============================================
+      #              AUTHENTICATION
+      # ==============================================
+      # Auth is automatic! On first start, follow the link in logs.
+      # Credentials are cached for future restarts.
+      #
+      # Optional: specify profile if you have multiple
+      # HYTALE_PROFILE: ""
+      #
+      # Optional: pass tokens directly (skips interactive auth)
+      # HYTALE_SERVER_SESSION_TOKEN: ""
+      # HYTALE_SERVER_IDENTITY_TOKEN: ""
 
-    # ------------------------------------------------------
-    #                   Security
-    # ------------------------------------------------------
+      # ==============================================
+      #              ADVANCED SETTINGS
+      # ==============================================
+      DEBUG: "${DEBUG:-FALSE}"
+      PROD: "${PROD:-FALSE}"
+      # JAVA_ARGS: ""  # Additional JVM arguments (memory is handled above)
+
     security_opt:
       - no-new-privileges:true
-
-    # ------------------------------------------------------
-    #                   Resources
-    # ------------------------------------------------------
-    deploy:
-      resources:
-        limits:
-          memory: 6G
-        reservations:
-          memory: 2G
 
 volumes:
   hytale-data:

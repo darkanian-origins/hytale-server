@@ -15,6 +15,9 @@ export HYTALE_ALLOW_OP_FLAG=""
 export HYTALE_AUTH_MODE_FLAG=""
 export HYTALE_BACKUP_FLAG=""
 export HYTALE_BACKUP_FREQUENCY_FLAG=""
+export HYTALE_SESSION_TOKEN_FLAG=""
+export HYTALE_IDENTITY_TOKEN_FLAG=""
+export HYTALE_OWNER_UUID_FLAG=""
 
 # ------------------------------------------------------
 #              Cache Configuration
@@ -59,6 +62,25 @@ if [ "${HYTALE_AUTH_MODE:-}" = "TRUE" ]; then
 else
     printf "${DIM}disabled${NC}\n"
 fi
+
+# ------------------------------------------------------
+#           OAuth Token Authentication
+# ------------------------------------------------------
+log_step "OAuth Tokens"
+if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ] && [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
+    export HYTALE_SESSION_TOKEN_FLAG="--session-token ${HYTALE_SERVER_SESSION_TOKEN}"
+    export HYTALE_IDENTITY_TOKEN_FLAG="--identity-token ${HYTALE_SERVER_IDENTITY_TOKEN}"
+
+    if [ -n "${HYTALE_OWNER_UUID:-}" ]; then
+        export HYTALE_OWNER_UUID_FLAG="--owner-uuid ${HYTALE_OWNER_UUID}"
+        printf "${GREEN}enabled${NC} (${CYAN}with owner UUID${NC})\n"
+    else
+        log_success
+    fi
+else
+    printf "${DIM}not configured${NC}\n"
+fi
+
 
 # ------------------------------------------------------
 #                Backup System

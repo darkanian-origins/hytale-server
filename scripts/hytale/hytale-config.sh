@@ -71,6 +71,7 @@ apply_env() {
 #           Environment Variable Mappings
 # ------------------------------------------------------
 log_step "Environment Overrides"
+printf "\n"
 
 apply_env ".ServerName"               "${HYTALE_SERVER_NAME:-}"        "ServerName"
 apply_env ".MOTD"                     "${HYTALE_MOTD:-}"               "MOTD"

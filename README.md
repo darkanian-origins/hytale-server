@@ -10,14 +10,16 @@
 
 ---
 
-[Quick Start](#-quick-start) | [Configuration](#-configuration) | [Environment Variables](#-environment-variables) | [Volumes](#-volumes)
+[Quick Start](#-quick-start) | [Configuration](#-configuration) | [Environment Variables](#-environment-variables) | [Authentication](#authentication) | [Volumes](#-volumes)
 
 </div>
 
 ## Features
 
 - **Auto-Download** - Automatically downloads and extracts the latest Hytale server
-- **Environment Config** - Configure your server entirely through environment variables
+- **Simple Configuration** - Easy-to-use environment variables (no JVM knowledge required)
+- **OAuth Authentication** - Helper script for easy OAuth 2.0 device code flow
+- **Hosting Platform Ready** - Works with Coolify, Portainer, and other Docker platforms
 - **Health Checks** - Built-in UDP health monitoring for orchestration platforms
 - **Security Hardened** - Runs as non-root user with minimal privileges
 - **Production Ready** - Includes security, network, and production audits
@@ -34,6 +36,7 @@ docker run -d \
   --name hytale-server \
   -p 5520:5520/udp \
   -v hytale-data:/home/container \
+  -e MEMORY=4G \
   -e HYTALE_SERVER_NAME="My Hytale Server" \
   -e HYTALE_MAX_PLAYERS=50 \
   ghcr.io/darkanian/hytale-server:latest
@@ -52,13 +55,13 @@ services:
     volumes:
       - hytale-data:/home/container
     environment:
+      # Resources (simple format: "2G", "4G", "512M")
+      MEMORY: "4G"
+
       # Server Settings
       HYTALE_SERVER_NAME: "My Hytale Server"
       HYTALE_MAX_PLAYERS: 50
       HYTALE_GAMEMODE: "Adventure"
-
-      # Performance
-      JAVA_ARGS: "-Xms2G -Xmx4G"
 
       # Optional Features
       HYTALE_BACKUP: "TRUE"
@@ -99,13 +102,27 @@ Environment variables take precedence and will overwrite values in the config fi
 
 ## Environment Variables
 
+### Resource Settings
+
+Simple memory configuration - no JVM knowledge required:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MEMORY` | ` ` | Server memory (e.g., `4G`, `2G`, `512M`) - sets both min and max |
+| `MEMORY_MIN` | ` ` | Minimum memory (e.g., `2G`) - use for fine-tuned control |
+| `MEMORY_MAX` | ` ` | Maximum memory (e.g., `4G`) - use for fine-tuned control |
+| `JAVA_ARGS` | ` ` | Additional JVM arguments (advanced users only) |
+
+**Examples:**
+- `MEMORY=4G` - Simple: allocates 4GB to the server
+- `MEMORY_MIN=2G` + `MEMORY_MAX=6G` - Advanced: start with 2GB, grow up to 6GB
+
 ### Core Settings
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SERVER_PORT` | `5520` | UDP port the server listens on |
 | `SERVER_IP` | `0.0.0.0` | IP address to bind to |
-| `JAVA_ARGS` | ` ` | Additional JVM arguments (e.g., `-Xms2G -Xmx4G`) |
 | `DEBUG` | `FALSE` | Enable debug mode (runs security & network audits) |
 | `PROD` | `FALSE` | Enable production mode (runs production audits) |
 
@@ -134,6 +151,97 @@ These variables override values in `config.json`:
 | `HYTALE_AUTH_MODE` | `FALSE` | Enable authentication mode |
 | `HYTALE_BACKUP` | `FALSE` | Enable automatic backups |
 | `HYTALE_BACKUP_FREQUENCY` | ` ` | Backup interval in seconds |
+
+### OAuth Authentication
+
+| Variable | Description |
+|----------|-------------|
+| `HYTALE_PROFILE` | Profile username (if you have multiple Hytale profiles) |
+| `HYTALE_SERVER_SESSION_TOKEN` | Session JWT (skips interactive auth) |
+| `HYTALE_SERVER_IDENTITY_TOKEN` | Identity JWT (skips interactive auth) |
+
+---
+
+## Authentication
+
+Hytale servers use OAuth 2.0 for authentication. This image includes automatic token caching - authenticate once and credentials are saved for future restarts.
+
+### First-Time Setup
+
+1. **Start the server**:
+
+```bash
+docker compose up -d
+```
+
+2. **Watch the logs for the auth prompt**:
+
+```bash
+docker logs -f hytale-server
+```
+
+3. **Follow the authentication link** displayed in the logs:
+
+```
+════════════════════════════════════════════════════════════════
+              HYTALE SERVER AUTHENTICATION REQUIRED
+════════════════════════════════════════════════════════════════
+
+  Visit: https://accounts.hytale.com/device?user_code=ABCD-1234
+
+════════════════════════════════════════════════════════════════
+```
+
+4. **Done!** - Credentials are cached automatically. Future restarts will use the cached tokens.
+
+### How Token Caching Works
+
+| What's Cached | TTL | Location |
+|---------------|-----|----------|
+| Refresh Token | 30 days | `.hytale-auth-cache.json` in volume |
+| Profile UUID | Permanent | Same file |
+
+On each startup:
+1. Loads cached refresh token
+2. Gets fresh access token
+3. Creates new game session
+4. Passes session tokens to server
+
+### Alternative: Token Passthrough
+
+For automated deployments, you can pass tokens directly via environment variables:
+
+```bash
+# Get tokens using the helper script
+./scripts/hytale/hytale-auth.sh login
+./scripts/hytale/hytale-auth.sh session
+./scripts/hytale/hytale-auth.sh env
+```
+
+Then add to your configuration:
+
+```yaml
+environment:
+  HYTALE_SERVER_SESSION_TOKEN: "eyJhbGciOi..."
+  HYTALE_SERVER_IDENTITY_TOKEN: "eyJhbGciOi..."
+  HYTALE_OWNER_UUID: "123e4567-e89b-12d3-a456-426614174000"
+```
+
+### Token Lifecycle
+
+| Token | TTL | Notes |
+|-------|-----|-------|
+| OAuth Access Token | 1 hour | Used to create game sessions |
+| OAuth Refresh Token | 30 days | Used to obtain new access tokens |
+| Game Session | 1 hour | Auto-refreshed by server |
+
+### Console Auth Commands
+
+| Command | Description |
+|---------|-------------|
+| `/auth login device` | Start device code flow |
+| `/auth status` | Check authentication status |
+| `/auth logout` | Clear authentication |
 
 ---
 
@@ -191,6 +299,47 @@ docker run -d \
   -p 5520:5520/udp \
   -v hytale-data:/home/container \
   hytale-server:local
+```
+
+### Pterodactyl / Pelican
+
+Import the included egg for Pterodactyl or Pelican panel:
+
+1. Download `egg-hytale.json` from this repository
+2. Go to **Admin** → **Nests** → **Import Egg**
+3. Upload the JSON file
+4. Create a new server using the Hytale egg
+
+**Variables available in the panel:**
+- Server Name, Max Players, Game Mode, MOTD
+- Server Password (leave empty for public)
+- Auth Flags (defaults to `--auth-persistence Encrypted`)
+- Java Arguments (optional)
+
+After first start, use the console to authenticate:
+```
+/auth login device
+```
+
+---
+
+### Podman
+
+This image is compatible with Podman. Use `podman-compose` or run directly:
+
+```bash
+# Build with Podman
+podman build -t hytale-server:local .
+
+# Run with Podman
+podman run -d \
+  --name hytale-server \
+  -p 5520:5520/udp \
+  -v hytale-data:/home/container \
+  hytale-server:local
+
+# Or use podman-compose
+podman-compose up -d
 ```
 
 ---
