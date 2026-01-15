@@ -39,7 +39,7 @@ ENV USER=container \
     DEBUG=FALSE
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini iproute2 ca-certificates tzdata jq && \
+    tini iproute2 ca-certificates tzdata jq 7zip && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=tianon/gosu:1.19 /gosu /usr/local/bin/
