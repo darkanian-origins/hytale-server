@@ -80,13 +80,13 @@ if [ "$DEBUG" = "TRUE" ]; then
     sh "$SCRIPTS_PATH/checks/security.sh"
     sh "$SCRIPTS_PATH/checks/network.sh"
 else
-    printf "%sSystem debug skipped (DEBUG=FALSE)%s\n" "$DIM" "$NC"
+    printf "${DIM}System debug skipped (DEBUG=FALSE)${NC}\n"
 fi
 
 if [ "$PROD" = "TRUE" ]; then
     sh "$SCRIPTS_PATH/checks/prod.sh"
 else
-    printf "%sProduction audit skipped (PROD=FALSE)%s\n" "$DIM" "$NC"
+    printf "${DIM}Production audit skipped (PROD=FALSE)${NC}\n"
 fi
 
 ARCH=$(uname -m)
@@ -118,7 +118,7 @@ log_success
 # ------------------------------------------------------
 #               Execution
 # ------------------------------------------------------
-printf "\n%s🚀 Launching Hytale Server...%s\n\n" "$BOLD$CYAN" "$NC"
+printf "\n${BOLD}${CYAN}🚀 Launching Hytale Server...${NC}\n\n"
 
 if command -v gosu >/dev/null 2>&1; then
     RUNTIME="gosu $USER"
